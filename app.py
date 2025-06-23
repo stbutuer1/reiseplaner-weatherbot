@@ -2,12 +2,32 @@ import streamlit as st
 import openai
 import requests
 from datetime import datetime
+import pytz
+from fpdf import FPDF
 
-# 🔐 API-Keys
+# === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 
-# 🌤 Wetter abrufen
+# === Stadt-Zeitzonen für Uhrzeit und Währung ===
+stadt_zeitzonen = {
+    "Berlin": "Europe/Berlin",
+    "Paris": "Europe/Paris",
+    "Istanbul": "Europe/Istanbul",
+    "London": "Europe/London",
+    "New York": "America/New_York",
+    "Tokyo": "Asia/Tokyo",
+    "Reutte": "Europe/Vienna",
+}
+
+def get_local_info(city):
+    stadt = city.strip().title()
+    zeitzone = stadt_zeitzonen.get(stadt, "Europe/Berlin")
+    now_local = datetime.now(pytz.timezone(zeitzone)).strftime("%H:%M:%S")
+    waehrung = "EUR" if zeitzone.startswith("Europe") else "USD"
+    return now_local, waehrung
+
+# === Wetterdaten ===
 def get_weather(city):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric&lang=de"
@@ -23,7 +43,7 @@ def get_weather(city):
     except Exception as e:
         return None, f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# ✈️ GPT-Reisetipps
+# === GPT-Reisetipps ===
 def get_travel_tips(city, lang="de"):
     try:
         prompt = {
@@ -41,56 +61,67 @@ def get_travel_tips(city, lang="de"):
     except Exception as e:
         return f"❌ Error: {e}"
 
-# 🌍 Sprache
-st.set_page_config(page_title="Reiseplaner-Bot", page_icon="🌤️")
+# === PDF-Erstellung ===
+def create_pdf(name, city, date, weather, tips):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, f"Reiseplaner für {name}", ln=True, align='C')
 
-# 🎛 Sidebar
-st.sidebar.title("🔍 Reiseoptionen")
-language = st.sidebar.radio("🌍 Sprache wählen", ["Deutsch", "Englisch"])
-today = datetime.now().date()
-travel_date = st.sidebar.date_input("📅 Reisedatum wählen", value=today)
+    pdf.set_font("Arial", size=12)
+    pdf.ln(10)
+    pdf.cell(200, 10, f"Reiseziel: {city}", ln=True)
+    pdf.cell(200, 10, f"Datum: {date}", ln=True)
+    pdf.multi_cell(0, 10, f"Wetter: {weather}")
 
-st.sidebar.markdown("---")
-city = st.sidebar.text_input("🌆 Reiseziel eingeben", placeholder="z. B. Rom, Paris, Istanbul")
+    pdf.ln(5)
+    pdf.multi_cell(0, 10, f"Reisetipps:\n{tips}")
 
-if city:
-    # 🔗 Transport-Links
-    st.sidebar.markdown("**🚉 Anreiseoptionen**")
-    st.sidebar.markdown("[🚆 Deutsche Bahn](https://reiseauskunft.bahn.de)", unsafe_allow_html=True)
-    st.sidebar.markdown(f"[✈️ Flüge nach {city} (Skyscanner)](https://www.skyscanner.de/transport/fluge-nach/{city})", unsafe_allow_html=True)
+    path = "/mnt/data/reiseplan.pdf"
+    pdf.output(path)
+    return path
 
-    # 🖼️ Bild aus Unsplash
-    st.sidebar.image(f"https://source.unsplash.com/400x300/?{city}", caption=f"{city}", use_column_width=True)
+# === App UI ===
+st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
+st.title("🌤️ Reiseplaner-Bot mit KI, Wetter & PDF")
 
-    # 🔗 Weitere Links
-    st.sidebar.markdown("**🔗 Weitere Links**")
-    st.sidebar.markdown(f"[🏨 Hotels in {city}](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"[🗺️ {city} auf Google Maps](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"[🎯 Tripadvisor: {city}](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+# === Tabs ===
+tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "📄 PDF Export"])
 
-    # 🌐 Info: Uhrzeit & Währung (symbolisch)
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("**🌍 Ortsinfo (symbolisch)**")
-    st.sidebar.markdown("🕒 Lokale Uhrzeit: wird angepasst")  # Placeholder
-    st.sidebar.markdown("💱 Währung: z. B. EUR")
+with tabs[0]:
+    language = st.radio("🌍 Sprache", ["Deutsch", "Englisch"], horizontal=True)
+    name = st.text_input("Dein Name")
+    city = st.text_input("Reiseziel", placeholder="z. B. Paris, Reutte, Istanbul")
+    travel_date = st.date_input("📅 Reisedatum", value=datetime.now().date())
 
-st.sidebar.markdown("---")
-st.sidebar.info("Gib ein Reiseziel und Datum ein, um Tipps & Wetter zu erhalten.")
-
-# 🧠 Hauptbereich
-st.title("🌤️ Reiseplaner-Bot mit Wetter, Sprache & KI")
-
-if city:
-    temp, weather = get_weather(city)
-
-    if isinstance(temp, float):
-        if language == "Deutsch":
-            st.success(f"In {city} ist es aktuell {temp:.1f}°C mit {weather}.")
+    if city:
+        temp, desc = get_weather(city)
+        if isinstance(temp, float):
+            weather_info = f"{temp:.1f}°C mit {desc}" if language == "Deutsch" else f"{temp:.1f}°C with {desc}"
+            st.success(weather_info)
         else:
-            st.success(f"The current weather in {city} is {temp:.1f}°C with {weather}.")
-    else:
-        st.warning(weather)
+            weather_info = desc
+            st.warning(desc)
 
-    with st.spinner("🔄 Lade Reisetipps..."):
         tips = get_travel_tips(city, lang="de" if language == "Deutsch" else "en")
-    st.info(tips)
+        st.info(tips)
+    else:
+        weather_info = ""
+        tips = ""
+
+with tabs[1]:
+    if city:
+        time, currency = get_local_info(city)
+        st.metric("🕓 Lokale Uhrzeit", time)
+        st.metric("💱 Währung", currency)
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
+
+with tabs[2]:
+    if city and tips and name:
+        if st.button("📄 PDF erstellen"):
+            file_path = create_pdf(name, city, travel_date, weather_info, tips)
+            with open(file_path, "rb") as f:
+                st.download_button("⬇️ PDF herunterladen", f, file_name="Reiseplan.pdf")
+    else:
+        st.warning("Bitte gib Name, Reiseziel und Datum ein, um eine PDF zu erstellen.")
