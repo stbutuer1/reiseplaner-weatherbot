@@ -9,6 +9,7 @@ import pytz
 import folium
 from streamlit_folium import st_folium
 from fpdf import FPDF
+import os
 
 # === API-Key-Konfiguration ===
 from openai import OpenAI
@@ -172,21 +173,57 @@ with tabs[4]:
                 st.image(image_url, caption=sight, use_container_width=True)
             else:
                 st.warning(f"❌ Kein Bild für {sight} gefunden.")
-                
-with tabs[5]:  # z. B. "💾 Speichern"
-    st.subheader("💾 Reiseübersicht speichern")
 
+def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    pdf.cell(200, 10, txt=f"Reiseplan für {city}", ln=True, align='C')
+    pdf.ln(10)
+    pdf.cell(200, 10, txt=f"📅 Reisedatum: {date}", ln=True)
+    pdf.cell(200, 10, txt=f"🌤️ Wetter: {weather}", ln=True)
+    pdf.cell(200, 10, txt=f"🕒 Lokale Uhrzeit: {time_str}", ln=True)
+    pdf.cell(200, 10, txt=f"💱 Währung: {currency}", ln=True)
+    pdf.ln(10)
+
+    pdf.cell(200, 10, txt="🏨 Hotels:", ln=True)
+    for hotel in hotels:
+        pdf.cell(200, 10, txt=f"- {hotel}", ln=True)
+    pdf.ln(5)
+
+    pdf.cell(200, 10, txt="🎯 Sehenswürdigkeiten:", ln=True)
+    for sight in sights:
+        pdf.cell(200, 10, txt=f"- {sight}", ln=True)
+    pdf.ln(5)
+
+    pdf.cell(200, 10, txt="💡 Reisetipps:", ln=True)
+    pdf.multi_cell(0, 10, tips)
+
+    output_path = "/mnt/data/reiseplan.pdf"
+    pdf.output(output_path)
+    return output_path
+
+                
+with tabs[5]:
     if city:
-        if st.button("📄 PDF erstellen"):
+        st.subheader("💾 PDF speichern")
+        if st.button("📥 PDF herunterladen"):
             pdf_path = create_pdf(
                 city=city,
-                date=date.strftime("%d.%m.%Y"),
+                date=date,
                 weather=get_weather(city),
-                tips=get_travel_tips(city, date),
-                time_str=get_timezone_and_currency(city)[0],
-                currency=get_timezone_and_currency(city)[1],
+                time_str=time_str,
+                currency=currency,
                 hotels=get_hotel_suggestions(city),
-                sights=get_attractions(city)
+                sights=get_attractions(city),
+                tips=get_travel_tips(city, date)
             )
             with open(pdf_path, "rb") as f:
-                st.download_button("📥 PDF herunterladen", f, file_name="Reiseplan.pdf")                
+                st.download_button(
+                    label="📄 PDF herunterladen",
+                    data=f,
+                    file_name=f"Reiseplan_{city}.pdf",
+                    mime="application/pdf"
+                )
+               
