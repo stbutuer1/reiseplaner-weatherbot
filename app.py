@@ -132,6 +132,6 @@ with tabs[4]:
             if unsplash_key:
                 image_url = get_unsplash_image(f"{place} {city}")
                 if image_url:
-                    st.image(image_url, caption=place, use_column_width=True)
+                    st.image(image_url, caption=place, use_container_width=True)
     else:
         st.info("Bitte zuerst ein Reiseziel eingeben.")
