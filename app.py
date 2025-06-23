@@ -207,9 +207,9 @@ def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
     pdf.cell(200, 10, txt="Reisetipps:", ln=True)
     pdf.multi_cell(0, 10, strip_emojis(tips))
 
-    # Statt auf Festplatte in einen BytesIO-Stream schreiben
+    # Schreibe als Bytes in den Puffer
     buffer = BytesIO()
-    pdf.output(buffer)
+    buffer.write(pdf.output(dest="S").encode("latin1"))
     buffer.seek(0)
     return buffer
                 
