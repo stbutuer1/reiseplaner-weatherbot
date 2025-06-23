@@ -1,3 +1,4 @@
+
 import streamlit as st
 import openai
 import requests
@@ -13,51 +14,6 @@ from streamlit_folium import st_folium
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets["UNSPLASH_ACCESS_KEY"]
-
-# === Design & Animation ===
-st.set_page_config("Reiseplaner mit KI", "🌤️")
-st.markdown("""
-    <style>
-    body {
-        background-color: #e6f2ff;
-    }
-    [data-testid="stAppViewContainer"] > .main {
-        background-color: #e6f2ff;
-    }
-    section[data-testid="stSidebar"] {
-        background-color: #cce6ff;
-    }
-
-    /* Flugzeug-Animation links */
-    @keyframes fly-left {
-        0% { left: -100px; top: 50px; transform: rotate(10deg); }
-        100% { left: 110%; top: 50px; transform: rotate(10deg); }
-    }
-    #plane-left {
-        position: fixed;
-        z-index: 9999;
-        width: 60px;
-        animation: fly-left 12s linear infinite;
-    }
-
-    /* Flugzeug-Animation rechts */
-    @keyframes fly-right {
-        0% { right: -100px; top: 150px; transform: rotate(-20deg); }
-        100% { right: 110%; top: 150px; transform: rotate(-20deg); }
-    }
-    #plane-right {
-        position: fixed;
-        z-index: 9999;
-        width: 60px;
-        animation: fly-right 15s linear infinite;
-    }
-    </style>
-
-    <img id="plane-left" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
-    <img id="plane-right" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
-""", unsafe_allow_html=True)
-
-st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
 
 # === GPT Reise-Tipps ===
 def get_travel_tips(city, date):
@@ -153,7 +109,10 @@ def show_map(city):
         folium.Marker([loc.latitude, loc.longitude], tooltip=city).add_to(m)
         st_folium(m, height=400)
 
-# === Streamlit Tabs ===
+# === Streamlit App ===
+st.set_page_config("Reiseplaner mit KI", "🌤️")
+st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
+
 tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
 with tabs[0]:
