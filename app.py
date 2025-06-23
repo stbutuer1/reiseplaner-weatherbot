@@ -15,7 +15,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets["UNSPLASH_ACCESS_KEY"]
 
-# === Stil: Hintergrundfarbe + Flugzeuganimation ===
+# === Stil: Hintergrundfarbe (ohne Animation) ===
 st.set_page_config("Reiseplaner mit KI", "🌤️")
 st.markdown("""
     <style>
@@ -28,35 +28,10 @@ st.markdown("""
     section[data-testid="stSidebar"] {
         background-color: #cce6ff;
     }
-
-    @keyframes fly-left {
-        0% { left: -100px; top: 50px; transform: rotate(10deg); }
-        100% { left: 110%; top: 50px; transform: rotate(10deg); }
-    }
-    #plane-left {
-        position: fixed;
-        z-index: 9999;
-        width: 60px;
-        animation: fly-left 12s linear infinite;
-    }
-
-    @keyframes fly-right {
-        0% { right: -100px; top: 150px; transform: rotate(-20deg); }
-        100% { right: 110%; top: 150px; transform: rotate(-20deg); }
-    }
-    #plane-right {
-        position: fixed;
-        z-index: 9999;
-        width: 60px;
-        animation: fly-right 15s linear infinite;
-    }
     </style>
-
-    <img id="plane-left" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
-    <img id="plane-right" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
 """, unsafe_allow_html=True)
 
-# === GPT Abfragen (neu) ===
+# === GPT Abfragen ===
 def ask_gpt(prompt):
     try:
         response = client.chat.completions.create(
