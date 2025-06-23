@@ -1,4 +1,4 @@
-# Vollständiger aktualisierter Code mit GPT-Währungsabfrage in Ortsinfo-Tab
+# Vollständiger aktualisierter Code mit GPT-Hotelvorschlägen im Tab "🏨 Hotels"
 
 import streamlit as st
 import openai
@@ -44,6 +44,30 @@ def get_local_info_gpt(city, lang="de"):
     except Exception as e:
         return f"❌ Fehler: {e}"
 
+# === GPT-Hotelsuche ===
+def get_hotels_for_city(city, lang="de"):
+    try:
+        prompt = {
+            "de": f"Nenne mir 5 bekannte Hotels in {city} (nur Namen, keine Beschreibung).",
+            "en": f"Name 5 well-known hotels in {city} (only names, no descriptions)."
+        }[lang]
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Du bist ein hilfreicher Reiseassistent."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        text = response.choices[0].message.content
+
+        # Extrahiere Hotelliste
+        lines = text.strip().split("\n")
+        hotels = [line.strip().lstrip("0123456789.-• ").strip() for line in lines if line.strip()]
+        return hotels
+    except Exception as e:
+        return [f"❌ Fehler beim Abrufen der Hotels: {e}"]
+
 # === Wetterdaten ===
 def get_weather(city):
     try:
@@ -85,14 +109,11 @@ def render_local_info_tab(city, language):
         location = geolocator.geocode(city)
         if location:
             tf = TimezoneFinder()
-            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            timezone = tf.timezone_at(lng=location.longitude, lat=location.longitude)
             time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
             st.metric("🕓 Lokale Uhrzeit", time)
         else:
             st.warning("Stadt konnte nicht gefunden werden.")
-            time = "Unbekannt"
-
-        # GPT-Währung ausgeben
         st.subheader("💱 Lokale Währung")
         currency_info = get_local_info_gpt(city, lang="de" if language == "Deutsch" else "en")
         st.info(currency_info)
