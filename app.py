@@ -1,14 +1,13 @@
 import streamlit as st
 import openai
 import requests
+from datetime import datetime
 
-# 🔐 API-Keys aus Streamlit Cloud
-client = openai.OpenAI(
-    api_key=st.secrets["OPENAI_API_KEY"]
-)
+# 🔐 API-Keys
+client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 
-# 🌤 Wetter abrufen von OpenWeather
+# 🌤 Wetter abrufen
 def get_weather(city):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric&lang=de"
@@ -16,59 +15,66 @@ def get_weather(city):
         if "main" in response:
             temp = response["main"]["temp"]
             desc = response["weather"][0]["description"]
-            return f"In {city} ist es aktuell {temp}°C mit {desc}."
+            return temp, desc
         elif "message" in response:
-            return f"⚠️ Fehler: {response['message']}"
+            return None, f"⚠️ Fehler: {response['message']}"
         else:
-            return "⚠️ Unbekannter Fehler bei der Wetterabfrage."
+            return None, "⚠️ Unbekannter Fehler bei der Wetterabfrage."
     except Exception as e:
-        return f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
+        return None, f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# ✈️ Reisetipps mit GPT-3.5
-def get_travel_tips(city):
+# ✈️ GPT-Reisetipps
+def get_travel_tips(city, lang="de"):
     try:
-        prompt = f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city} in Europa."
+        prompt = {
+            "de": f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city} in Europa.",
+            "en": f"Give me three short, helpful travel tips for a city trip to {city} in Europe."
+        }[lang]
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Du bist ein freundlicher Reiseassistent."},
+                {"role": "system", "content": "You are a helpful travel assistant."},
                 {"role": "user", "content": prompt}
             ]
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"❌ Fehler beim Abrufen der Reisetipps: {e}"
+        return f"❌ Error: {e}"
 
-# 🌐 Streamlit UI
-st.set_page_config(page_title="Reiseplaner mit Wetter", page_icon="🌍")
-st.title("🌤️ Reiseplaner-Bot mit Wetter & KI")
+# 🌍 Sprache
+st.set_page_config(page_title="Reiseplaner-Bot", page_icon="🌤️")
 
-# Seitenleiste (Sidebar)
-st.sidebar.title("🔍 Weitere Infos")
-st.sidebar.markdown("**🔗 Nützliche Links**")
-
-# Platzhalter für Links – nur wenn eine Stadt eingegeben ist
-city = st.text_input("🌍 Wohin möchtest du reisen?", placeholder="z. B. Rom, Paris, Istanbul")
-
-if city:
-    # Dynamische Links basierend auf Stadt
-    st.sidebar.markdown(f"[🏨 Hotels in {city} (Booking.com)](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"[📍 {city} bei Google Maps](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"[🎯 Sehenswürdigkeiten in {city} (Tripadvisor)](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+# 🎛 Sidebar
+st.sidebar.title("🔍 Reiseoptionen")
+language = st.sidebar.radio("🌍 Sprache wählen", ["Deutsch", "Englisch"])
+today = datetime.now().date()
+travel_date = st.sidebar.date_input("📅 Reisedatum wählen", value=today)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**🌍 Sprache** (nicht aktiv)")
-st.sidebar.radio("Sprache wählen", ["Deutsch", "Englisch"], index=0)
+city = st.sidebar.text_input("🌆 Reiseziel eingeben", placeholder="z. B. Rom, Paris, Istanbul")
+
+if city:
+    st.sidebar.markdown(f"🏨 [Hotels in {city}](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"🗺️ [Karte: {city}](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"🎯 [Tripadvisor: {city}](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
-st.sidebar.info("💡 Gib oben eine Stadt ein und erhalte sofort Wetter & Reisetipps!")
+st.sidebar.info("Gib ein Reiseziel und Datum ein, um Tipps & Wetter zu erhalten.")
 
-# Hauptinhalt
+# 🧠 Hauptbereich
+st.title("🌤️ Reiseplaner-Bot mit Wetter, Sprache & KI")
+
 if city:
-    with st.spinner("🔄 Wetter wird geladen..."):
-        weather = get_weather(city)
-    st.success(weather)
+    temp, weather = get_weather(city)
 
-    with st.spinner("🔄 Reisetipps werden geladen..."):
-        tips = get_travel_tips(city)
+    if isinstance(temp, float):
+        if language == "Deutsch":
+            st.success(f"In {city} ist es aktuell {temp:.1f}°C mit {weather}.")
+        else:
+            st.success(f"The current weather in {city} is {temp:.1f}°C with {weather}.")
+    else:
+        st.warning(weather)
+
+    with st.spinner("🔄 Lade Reisetipps..."):
+        tips = get_travel_tips(city, lang="de" if language == "Deutsch" else "en")
     st.info(tips)
