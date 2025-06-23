@@ -5,10 +5,16 @@ from datetime import datetime
 import pytz
 from fpdf import FPDF
 from io import BytesIO
+import smtplib
+from email.message import EmailMessage
 
 # === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
+
+# Optional: E-Mail-Zugangsdaten (in secrets eintragen)
+EMAIL_ADDRESS = st.secrets.get("EMAIL_ADDRESS")
+EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 
 # === Stadt-Zeitzonen für Uhrzeit und Währung ===
 stadt_zeitzonen = {
@@ -82,12 +88,34 @@ def create_pdf(name, city, date, weather, tips):
     pdf_buffer.seek(0)
     return pdf_buffer
 
+# === E-Mail-Versand ===
+def send_email(receiver_email, pdf_buffer):
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        return "❌ E-Mail-Zugangsdaten fehlen. Bitte in den Secrets eintragen."
+
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = "Dein Reiseplaner als PDF"
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = receiver_email
+        msg.set_content("Im Anhang findest du deinen individuellen Reiseplan.")
+
+        msg.add_attachment(pdf_buffer.read(), maintype='application', subtype='pdf', filename='Reiseplan.pdf')
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+
+        return "✅ E-Mail erfolgreich versendet."
+    except Exception as e:
+        return f"❌ Fehler beim Senden der E-Mail: {e}"
+
 # === App UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter & PDF")
 
 # === Tabs ===
-tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "📄 PDF Export"])
+tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "📄 PDF Export", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
 with tabs[0]:
     language = st.radio("🌍 Sprache", ["Deutsch", "Englisch"], horizontal=True)
@@ -119,9 +147,38 @@ with tabs[1]:
         st.info("Bitte zuerst ein Reiseziel eingeben.")
 
 with tabs[2]:
-    if city and tips and name:
-        if st.button("📄 PDF erstellen"):
+    email = st.text_input("📧 E-Mail-Adresse eingeben")
+
+    if city and tips and name and email:
+        if st.button("📄 PDF erstellen und senden"):
             pdf_data = create_pdf(name, city, travel_date, weather_info, tips)
             st.download_button("⬇️ PDF herunterladen", pdf_data, file_name="Reiseplan.pdf")
+
+            status = send_email(email, pdf_data)
+            st.success(status)
     else:
-        st.warning("Bitte gib Name, Reiseziel und Datum ein, um eine PDF zu erstellen.")
+        st.warning("Bitte gib Name, Reiseziel, Datum und E-Mail-Adresse ein, um eine PDF zu erstellen und zu senden.")
+
+with tabs[3]:
+    if city:
+        st.header(f"🏨 Hotels in {city}")
+        st.image(f"https://source.unsplash.com/600x300/?hotel,{city}", use_column_width=True)
+        st.markdown(f"[➡️ Hotels suchen](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
+
+with tabs[4]:
+    if city:
+        st.header(f"🗺️ Karte von {city}")
+        st.image(f"https://source.unsplash.com/600x300/?map,{city}", use_column_width=True)
+        st.markdown(f"[➡️ Google Maps öffnen](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
+
+with tabs[5]:
+    if city:
+        st.header(f"🎯 Sehenswürdigkeiten in {city}")
+        st.image(f"https://source.unsplash.com/600x300/?sightseeing,{city}", use_column_width=True)
+        st.markdown(f"[➡️ TripAdvisor Tipps](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
