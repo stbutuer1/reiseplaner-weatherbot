@@ -43,8 +43,27 @@ def get_travel_tips(city):
 st.set_page_config(page_title="Reiseplaner mit Wetter", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit Wetter & KI")
 
+# Seitenleiste (Sidebar)
+st.sidebar.title("🔍 Weitere Infos")
+st.sidebar.markdown("**🔗 Nützliche Links**")
+
+# Platzhalter für Links – nur wenn eine Stadt eingegeben ist
 city = st.text_input("🌍 Wohin möchtest du reisen?", placeholder="z. B. Rom, Paris, Istanbul")
 
+if city:
+    # Dynamische Links basierend auf Stadt
+    st.sidebar.markdown(f"[🏨 Hotels in {city} (Booking.com)](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"[📍 {city} bei Google Maps](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"[🎯 Sehenswürdigkeiten in {city} (Tripadvisor)](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**🌍 Sprache** (nicht aktiv)")
+st.sidebar.radio("Sprache wählen", ["Deutsch", "Englisch"], index=0)
+
+st.sidebar.markdown("---")
+st.sidebar.info("💡 Gib oben eine Stadt ein und erhalte sofort Wetter & Reisetipps!")
+
+# Hauptinhalt
 if city:
     with st.spinner("🔄 Wetter wird geladen..."):
         weather = get_weather(city)
