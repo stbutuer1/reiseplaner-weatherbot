@@ -179,10 +179,9 @@ import re
 def strip_emojis(text):
     return re.sub(r'[^\x00-\x7F]+', '', text)
 
-def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
-    # Stelle sicher, dass das Verzeichnis existiert
-    os.makedirs("/mnt/data", exist_ok=True)
+from io import BytesIO
 
+def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -208,16 +207,17 @@ def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
     pdf.cell(200, 10, txt="Reisetipps:", ln=True)
     pdf.multi_cell(0, 10, strip_emojis(tips))
 
-    output_path = "/mnt/data/reiseplan.pdf"
-    pdf.output(output_path)
-    return output_path
-
+    # Statt auf Festplatte in einen BytesIO-Stream schreiben
+    buffer = BytesIO()
+    pdf.output(buffer)
+    buffer.seek(0)
+    return buffer
                 
 with tabs[5]:
     if city:
         st.subheader("💾 PDF speichern")
         if st.button("📥 PDF herunterladen"):
-            pdf_path = create_pdf(
+            pdf_buffer = create_pdf(
                 city=city,
                 date=date,
                 weather=get_weather(city),
@@ -228,11 +228,9 @@ with tabs[5]:
                 tips=get_travel_tips(city, date)
             )
             st.success("✅ PDF wurde erstellt!")
-            with open(pdf_path, "rb") as f:
-                st.download_button(
-                    label="📄 PDF herunterladen",
-                    data=f,
-                    file_name=f"Reiseplan_{city}.pdf",
-                    mime="application/pdf"
-                )
-               
+            st.download_button(
+                label="📄 PDF herunterladen",
+                data=pdf_buffer,
+                file_name=f"Reiseplan_{city}.pdf",
+                mime="application/pdf"
+            )
