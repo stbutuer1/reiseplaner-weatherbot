@@ -2,32 +2,34 @@ import streamlit as st
 import openai
 import requests
 
-# 🔐 API-Keys aus den Streamlit Secrets laden
+# 🔐 API-Keys aus Streamlit Cloud
 client = openai.OpenAI(
     api_key=st.secrets["OPENAI_API_KEY"]
 )
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 
-# 🌤 Wetterdaten von OpenWeather abrufen
+# 🌤 Wetter abrufen von OpenWeather
 def get_weather(city):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric&lang=de"
         response = requests.get(url).json()
-        if response.get("main"):
+        if "main" in response:
             temp = response["main"]["temp"]
             desc = response["weather"][0]["description"]
             return f"In {city} ist es aktuell {temp}°C mit {desc}."
+        elif "message" in response:
+            return f"⚠️ Fehler: {response['message']}"
         else:
-            return "⚠️ Wetterdaten konnten nicht gefunden werden."
+            return "⚠️ Unbekannter Fehler bei der Wetterabfrage."
     except Exception as e:
         return f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# ✈️ Reisetipps von ChatGPT holen
+# ✈️ Reisetipps mit GPT-3.5
 def get_travel_tips(city):
     try:
-        prompt = f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city}."
+        prompt = f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city} in Europa."
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Du bist ein freundlicher Reiseassistent."},
                 {"role": "user", "content": prompt}
@@ -37,7 +39,7 @@ def get_travel_tips(city):
     except Exception as e:
         return f"❌ Fehler beim Abrufen der Reisetipps: {e}"
 
-# 🌐 Streamlit Benutzeroberfläche
+# 🌐 Streamlit UI
 st.set_page_config(page_title="Reiseplaner mit Wetter", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit Wetter & KI")
 
