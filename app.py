@@ -135,6 +135,28 @@ def render_local_info_tab(city, language):
 
 # === Streamlit UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
+st.markdown("""
+    <style>
+    body {
+        background-color: #f0f8ff;
+    }
+    section[data-testid="stSidebar"] {
+        background-color: #e6f2ff;
+        border-right: 2px solid #aaa;
+    }
+    @keyframes fly {
+        0% { left: -100px; top: 30px; }
+        100% { left: 110%; top: 30px; }
+    }
+    #plane {
+        position: fixed;
+        z-index: 9999;
+        width: 60px;
+        animation: fly 10s linear infinite;
+    }
+    </style>
+    <img id="plane" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
+""", unsafe_allow_html=True)
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
 
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
