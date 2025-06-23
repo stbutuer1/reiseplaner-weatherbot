@@ -1,7 +1,7 @@
-fpdf
 streamlit
 openai
 requests
+geopy
 pytz
-folium
+timezonefinder
 streamlit-folium
