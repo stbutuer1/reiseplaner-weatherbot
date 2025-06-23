@@ -175,7 +175,7 @@ st.markdown("""
     </style>
     <img id="plane" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
 """, unsafe_allow_html=True)
-st.title("🌤️ Willkommen zu deinem Reiseplaner-Bot)
+st.title("🌤️ Willkommen zu deinem Reiseplaner-Bot")
 
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
