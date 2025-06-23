@@ -1,3 +1,5 @@
 streamlit
 openai
 requests
+pytz
+fpdf
