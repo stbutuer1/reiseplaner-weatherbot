@@ -126,7 +126,7 @@ def show_map(city):
 
 # === Streamlit App Tabs ===
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
-tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
+tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten", "💾 Speichern"])
 
 with tabs[0]:
     city = st.text_input("Reiseziel", placeholder="z. B. Paris, Istanbul")
