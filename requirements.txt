@@ -1,5 +1,6 @@
+fpdf
 streamlit
 openai
 requests
 pytz
-fpdf
+folium
