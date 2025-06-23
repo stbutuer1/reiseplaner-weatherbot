@@ -5,3 +5,4 @@ geopy
 pytz
 timezonefinder
 streamlit-folium
+fpdf
