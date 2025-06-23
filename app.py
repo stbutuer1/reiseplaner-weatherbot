@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 import pytz
 from fpdf import FPDF
+from io import BytesIO
 
 # === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -73,13 +74,13 @@ def create_pdf(name, city, date, weather, tips):
     pdf.cell(200, 10, f"Reiseziel: {city}", ln=True)
     pdf.cell(200, 10, f"Datum: {date}", ln=True)
     pdf.multi_cell(0, 10, f"Wetter: {weather}")
-
     pdf.ln(5)
     pdf.multi_cell(0, 10, f"Reisetipps:\n{tips}")
 
-    path = "/mnt/data/reiseplan.pdf"
-    pdf.output(path)
-    return path
+    pdf_buffer = BytesIO()
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
+    return pdf_buffer
 
 # === App UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
@@ -120,8 +121,7 @@ with tabs[1]:
 with tabs[2]:
     if city and tips and name:
         if st.button("📄 PDF erstellen"):
-            file_path = create_pdf(name, city, travel_date, weather_info, tips)
-            with open(file_path, "rb") as f:
-                st.download_button("⬇️ PDF herunterladen", f, file_name="Reiseplan.pdf")
+            pdf_data = create_pdf(name, city, travel_date, weather_info, tips)
+            st.download_button("⬇️ PDF herunterladen", pdf_data, file_name="Reiseplan.pdf")
     else:
         st.warning("Bitte gib Name, Reiseziel und Datum ein, um eine PDF zu erstellen.")
