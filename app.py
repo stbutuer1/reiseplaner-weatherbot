@@ -8,7 +8,7 @@ from geopy.geocoders import Nominatim
 import pytz
 import folium
 from streamlit_folium import st_folium
-from dein_modulname import create_pdf
+from fpdf import FPDF
 
 # === API-Key-Konfiguration ===
 from openai import OpenAI
