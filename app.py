@@ -1,9 +1,4 @@
-# Vollständiger aktualisierter Streamlit-Code mit:
-# ✅ Dynamischer Uhrzeit
-# ✅ Korrekter Währung nach Land
-# ✅ Sehenswürdigkeiten mit Bildern (Unsplash)
-# ✅ Interaktive Karte
-# ❌ Ohne PDF oder E-Mail
+# Vollständiger aktualisierter Code mit GPT-Währungsabfrage in Ortsinfo-Tab
 
 import streamlit as st
 import openai
@@ -16,7 +11,7 @@ import folium
 from streamlit_folium import st_folium
 from urllib.parse import quote_plus
 
-# === API Keys aus Streamlit Secrets ===
+# === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets.get("UNSPLASH_ACCESS_KEY")
@@ -30,33 +25,24 @@ def get_unsplash_image(query):
     except:
         return None
 
-# === Lokale Zeit + Währung ===
-def get_local_info(city):
+# === GPT-basierte Währungsinfo ===
+def get_local_info_gpt(city, lang="de"):
     try:
-        geolocator = Nominatim(user_agent="reiseplaner")
-        location = geolocator.geocode(city)
-        if not location:
-            return "Unbekannt", "Unbekannt"
+        prompt = {
+            "de": f"Welche Währung wird in {city} verwendet?",
+            "en": f"What currency is used in {city}?"
+        }[lang]
 
-        tf = TimezoneFinder()
-        timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
-        local_time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
-
-        country = location.raw["display_name"].split(",")[-1].strip()
-        country_currency_map = {
-            "Germany": "EUR", "Austria": "EUR", "Switzerland": "CHF",
-            "United Kingdom": "GBP", "Turkey": "TRY", "United States": "USD",
-            "France": "EUR", "Italy": "EUR", "Spain": "EUR",
-            "Netherlands": "EUR", "Belgium": "EUR", "Greece": "EUR",
-            "Portugal": "EUR", "Sweden": "SEK", "Norway": "NOK",
-            "Denmark": "DKK", "Poland": "PLN", "Czechia": "CZK",
-            "Japan": "JPY", "China": "CNY", "Russia": "RUB"
-        }
-        currency = country_currency_map.get(country, "Unbekannt")
-
-        return local_time, currency
-    except:
-        return "Unbekannt", "Unbekannt"
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Du bist ein hilfreicher Reiseassistent."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        return f"❌ Fehler: {e}"
 
 # === Wetterdaten ===
 def get_weather(city):
@@ -92,6 +78,27 @@ def get_travel_tips(city, lang="de"):
     except Exception as e:
         return f"❌ Error: {e}"
 
+# === Ortsinfo Tab ===
+def render_local_info_tab(city, language):
+    if city:
+        geolocator = Nominatim(user_agent="reiseplaner")
+        location = geolocator.geocode(city)
+        if location:
+            tf = TimezoneFinder()
+            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+            time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
+            st.metric("🕓 Lokale Uhrzeit", time)
+        else:
+            st.warning("Stadt konnte nicht gefunden werden.")
+            time = "Unbekannt"
+
+        # GPT-Währung ausgeben
+        st.subheader("💱 Lokale Währung")
+        currency_info = get_local_info_gpt(city, lang="de" if language == "Deutsch" else "en")
+        st.info(currency_info)
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
+
 # === Streamlit UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
@@ -115,12 +122,7 @@ with tabs[0]:
         st.info(tips)
 
 with tabs[1]:
-    if city:
-        time, currency = get_local_info(city)
-        st.metric("🕓 Lokale Uhrzeit", time)
-        st.metric("💱 Währung", currency)
-    else:
-        st.info("Bitte zuerst ein Reiseziel eingeben.")
+    render_local_info_tab(city, language)
 
 with tabs[2]:
     if city:
