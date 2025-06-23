@@ -2,11 +2,13 @@ import streamlit as st
 import openai
 import requests
 
-# 🔐 API-Keys sicher über Streamlit Cloud verwalten
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# 🔐 API-Keys aus den Streamlit Secrets laden
+client = openai.OpenAI(
+    api_key=st.secrets["OPENAI_API_KEY"]
+)
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 
-# 🌤 Wetterdaten abrufen
+# 🌤 Wetterdaten von OpenWeather abrufen
 def get_weather(city):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric&lang=de"
@@ -20,34 +22,32 @@ def get_weather(city):
     except Exception as e:
         return f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# ✈️ Reisetipps mit ChatGPT abrufen
+# ✈️ Reisetipps von ChatGPT holen
 def get_travel_tips(city):
     try:
-        prompt = f"Gib mir drei kurze Reisetipps für einen Städtetrip nach {city} in Deutschland oder Europa."
-        response = openai.ChatCompletion.create(
+        prompt = f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city}."
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "Du bist ein freundlicher Reiseassistent."},
                 {"role": "user", "content": prompt}
             ]
         )
-        return response.choices[0].message["content"]
+        return response.choices[0].message.content
     except Exception as e:
         return f"❌ Fehler beim Abrufen der Reisetipps: {e}"
 
-# 🌐 Streamlit UI
+# 🌐 Streamlit Benutzeroberfläche
 st.set_page_config(page_title="Reiseplaner mit Wetter", page_icon="🌍")
-st.title("🌤️ Reiseplaner-Bot mit Wetterfunktion")
+st.title("🌤️ Reiseplaner-Bot mit Wetter & KI")
 
-# Eingabe
 city = st.text_input("🌍 Wohin möchtest du reisen?", placeholder="z. B. Rom, Paris, Istanbul")
 
-# Ausgabe
 if city:
-    with st.spinner("🔄 Lade Wetterdaten..."):
+    with st.spinner("🔄 Wetter wird geladen..."):
         weather = get_weather(city)
     st.success(weather)
 
-    with st.spinner("🔄 Lade Reisetipps..."):
+    with st.spinner("🔄 Reisetipps werden geladen..."):
         tips = get_travel_tips(city)
     st.info(tips)
