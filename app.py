@@ -7,12 +7,12 @@ from fpdf import FPDF
 from io import BytesIO
 import smtplib
 from email.message import EmailMessage
+import folium
+from streamlit_folium import st_folium
 
 # === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
-
-# Optional: E-Mail-Zugangsdaten (in secrets eintragen)
 EMAIL_ADDRESS = st.secrets.get("EMAIL_ADDRESS")
 EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 
@@ -34,7 +34,6 @@ def get_local_info(city):
     waehrung = "EUR" if zeitzone.startswith("Europe") else "USD"
     return now_local, waehrung
 
-# === Wetterdaten ===
 def get_weather(city):
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={weather_api_key}&units=metric&lang=de"
@@ -50,7 +49,6 @@ def get_weather(city):
     except Exception as e:
         return None, f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# === GPT-Reisetipps ===
 def get_travel_tips(city, lang="de"):
     try:
         prompt = {
@@ -68,7 +66,6 @@ def get_travel_tips(city, lang="de"):
     except Exception as e:
         return f"❌ Error: {e}"
 
-# === PDF-Erstellung ===
 def create_pdf(name, city, date, weather, tips):
     pdf = FPDF()
     pdf.add_page()
@@ -88,11 +85,9 @@ def create_pdf(name, city, date, weather, tips):
     pdf_buffer.seek(0)
     return pdf_buffer
 
-# === E-Mail-Versand ===
 def send_email(receiver_email, pdf_buffer):
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
         return "❌ E-Mail-Zugangsdaten fehlen. Bitte in den Secrets eintragen."
-
     try:
         msg = EmailMessage()
         msg['Subject'] = "Dein Reiseplaner als PDF"
@@ -101,7 +96,6 @@ def send_email(receiver_email, pdf_buffer):
         msg.set_content("Im Anhang findest du deinen individuellen Reiseplan.")
 
         msg.add_attachment(pdf_buffer.read(), maintype='application', subtype='pdf', filename='Reiseplan.pdf')
-
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
             smtp.send_message(msg)
@@ -110,11 +104,38 @@ def send_email(receiver_email, pdf_buffer):
     except Exception as e:
         return f"❌ Fehler beim Senden der E-Mail: {e}"
 
-# === App UI ===
+def get_sights(city, lang="de"):
+    try:
+        prompt = {
+            "de": f"Nenne mir fünf bekannte Sehenswürdigkeiten in {city}. Gib nur die Namen in einer nummerierten Liste.",
+            "en": f"Name five famous tourist attractions in {city}. Just list the names as a numbered list."
+        }[lang]
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a travel assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        text = response.choices[0].message.content
+        return [line.split(". ", 1)[1] for line in text.split("\n") if ". " in line]
+    except Exception as e:
+        return [f"Fehler: {e}"]
+
+def get_city_coordinates(city):
+    try:
+        url = f"https://nominatim.openstreetmap.org/search?format=json&q={city}"
+        res = requests.get(url).json()
+        lat = float(res[0]["lat"])
+        lon = float(res[0]["lon"])
+        return lat, lon
+    except:
+        return 48.1374, 11.5755  # München Fallback
+
+# === UI Setup ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter & PDF")
 
-# === Tabs ===
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "📄 PDF Export", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
 with tabs[0]:
@@ -148,12 +169,10 @@ with tabs[1]:
 
 with tabs[2]:
     email = st.text_input("📧 E-Mail-Adresse eingeben")
-
     if city and tips and name and email:
         if st.button("📄 PDF erstellen und senden"):
             pdf_data = create_pdf(name, city, travel_date, weather_info, tips)
             st.download_button("⬇️ PDF herunterladen", pdf_data, file_name="Reiseplan.pdf")
-
             status = send_email(email, pdf_data)
             st.success(status)
     else:
@@ -162,23 +181,34 @@ with tabs[2]:
 with tabs[3]:
     if city:
         st.header(f"🏨 Hotels in {city}")
-        st.image(f"https://source.unsplash.com/600x300/?hotel,{city}", use_column_width=True)
-        st.markdown(f"[➡️ Hotels suchen](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
-    else:
-        st.info("Bitte zuerst ein Reiseziel eingeben.")
+        st.image(f"https://source.unsplash.com/800x400/?hotel,{city}", caption=f"Hotels in {city}")
+        st.markdown(f"[🔗 Hotels suchen](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
 
 with tabs[4]:
     if city:
-        st.header(f"🗺️ Karte von {city}")
-        st.image(f"https://source.unsplash.com/600x300/?map,{city}", use_column_width=True)
-        st.markdown(f"[➡️ Google Maps öffnen](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
-    else:
-        st.info("Bitte zuerst ein Reiseziel eingeben.")
+        st.header(f"🗺️ Stadtkarte von {city}")
+        st.image(f"https://source.unsplash.com/800x400/?map,{city}", caption=f"{city}")
+        st.markdown(f"[📍 {city} bei Google Maps ansehen](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
 
 with tabs[5]:
     if city:
         st.header(f"🎯 Sehenswürdigkeiten in {city}")
-        st.image(f"https://source.unsplash.com/600x300/?sightseeing,{city}", use_column_width=True)
-        st.markdown(f"[➡️ TripAdvisor Tipps](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+        sights = get_sights(city, lang="de" if language == "Deutsch" else "en")
+
+        for sight in sights:
+            col1, col2 = st.columns([1, 2])
+            with col1:
+                st.image(f"https://source.unsplash.com/400x300/?{sight}+{city}", caption=sight)
+            with col2:
+                url = f"https://www.google.com/search?q={sight.replace(' ', '+')}+{city}"
+                st.markdown(f"[🔎 {sight} auf Google ansehen]({url})", unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.subheader("🗺️ Interaktive Karte")
+
+        lat, lon = get_city_coordinates(city)
+        m = folium.Map(location=[lat, lon], zoom_start=13)
+        folium.Marker([lat, lon], tooltip=city).add_to(m)
+        st_folium(m, height=400)
     else:
-        st.info("Bitte zuerst ein Reiseziel eingeben.")
+        st.info("Bitte gib zuerst eine Stadt im Planungstab ein.")
