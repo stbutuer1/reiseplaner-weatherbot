@@ -177,9 +177,12 @@ with tabs[4]:
 import re
 
 def strip_emojis(text):
-    return re.sub(r'[^\x00-\x7F]+', '', text)  # Entfernt Nicht-ASCII-Zeichen
+    return re.sub(r'[^\x00-\x7F]+', '', text)
 
 def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
+    # Stelle sicher, dass das Verzeichnis existiert
+    os.makedirs("/mnt/data", exist_ok=True)
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -224,6 +227,7 @@ with tabs[5]:
                 sights=get_attractions(city),
                 tips=get_travel_tips(city, date)
             )
+            st.success("✅ PDF wurde erstellt!")
             with open(pdf_path, "rb") as f:
                 st.download_button(
                     label="📄 PDF herunterladen",
