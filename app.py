@@ -1,4 +1,3 @@
-# Vollständiger Code inkl. stabiler Ortsinfo-Funktion mit Fehlerbehandlung & Delay
 
 import streamlit as st
 import openai
@@ -18,23 +17,27 @@ client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets.get("UNSPLASH_ACCESS_KEY")
 
-# === Unsplash Bildabruf ===
+# === Bild von Unsplash holen (robust)
 def get_unsplash_image(query):
+    if not unsplash_key:
+        return None
     try:
-        url = f"https://api.unsplash.com/photos/random?query={quote_plus(query)}&client_id={unsplash_key}"
+        url = f"https://api.unsplash.com/search/photos?query={quote_plus(query)}&client_id={unsplash_key}&per_page=1"
         response = requests.get(url).json()
-        return response["urls"]["regular"]
-    except:
+        results = response.get("results")
+        if results:
+            return results[0]["urls"]["regular"]
+        return None
+    except Exception:
         return None
 
-# === GPT-basierte Währungsinfo ===
+# === GPT-Funktionen ===
 def get_local_info_gpt(city, lang="de"):
     try:
         prompt = {
             "de": f"Welche Währung wird in {city} verwendet?",
             "en": f"What currency is used in {city}?"
         }[lang]
-
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -46,14 +49,12 @@ def get_local_info_gpt(city, lang="de"):
     except Exception as e:
         return f"❌ Fehler: {e}"
 
-# === GPT-Hotelsuche ===
 def get_hotels_for_city(city, lang="de"):
     try:
         prompt = {
             "de": f"Nenne mir 5 bekannte Hotels in {city} (nur Namen, keine Beschreibung).",
             "en": f"Name 5 well-known hotels in {city} (only names, no descriptions)."
         }[lang]
-
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -67,6 +68,43 @@ def get_hotels_for_city(city, lang="de"):
         return hotels
     except Exception as e:
         return [f"❌ Fehler beim Abrufen der Hotels: {e}"]
+
+def get_travel_tips(city, date, lang="de"):
+    try:
+        formatted_date = date.strftime("%d.%m.%Y") if lang == "de" else date.strftime("%B %d, %Y")
+        prompt = {
+            "de": f"Gib mir drei hilfreiche, saisonale Reisetipps für einen Städtetrip nach {city} in Europa für das Datum {formatted_date}.",
+            "en": f"Give me three helpful, seasonal travel tips for a city trip to {city} in Europe on {formatted_date}."
+        }[lang]
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Du bist ein freundlicher Reiseassistent."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Fehler beim Abrufen der Reisetipps: {e}"
+
+def get_top_sights(city, lang="de"):
+    try:
+        prompt = {
+            "de": f"Nenne mir die drei bekanntesten Sehenswürdigkeiten in {city}. Nur den Namen, keine Beschreibung.",
+            "en": f"List the three most famous sights in {city}. Names only, no description."
+        }[lang]
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Du bist ein erfahrener Reiseführer."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        lines = response.choices[0].message.content.strip().split("\n")
+        sights = [line.strip().lstrip("0123456789.-• ").strip() for line in lines if line.strip()]
+        return sights
+    except Exception as e:
+        return [f"❌ Fehler beim Abrufen der Sehenswürdigkeiten: {e}"]
 
 # === Wetterdaten ===
 def get_weather(city):
@@ -84,25 +122,7 @@ def get_weather(city):
     except Exception as e:
         return None, f"❌ Fehler beim Abrufen der Wetterdaten: {e}"
 
-# === GPT-Reisetipps ===
-def get_travel_tips(city, lang="de"):
-    try:
-        prompt = {
-            "de": f"Gib mir drei kurze, hilfreiche Reisetipps für einen Städtetrip nach {city} in Europa.",
-            "en": f"Give me three short, helpful travel tips for a city trip to {city} in Europe."
-        }[lang]
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful travel assistant."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"❌ Error: {e}"
-
-# === Ortsinfo Tab – stabilisiert ===
+# === Ortsinfo Tab ===
 def render_local_info_tab(city, language):
     if city:
         geolocator = Nominatim(user_agent="reiseplaner-app-bueturkel")
@@ -110,7 +130,7 @@ def render_local_info_tab(city, language):
             time.sleep(1)
             location = geolocator.geocode(city)
         except GeocoderUnavailable:
-            st.warning("🌐 Standortdienst aktuell nicht erreichbar. Bitte versuche es in ein paar Sekunden erneut.")
+            st.warning("🌐 Standortdienst aktuell nicht erreichbar. Bitte versuche es später erneut.")
             return
         except Exception as e:
             st.warning(f"🌐 Fehler beim Abrufen der Standortdaten: {e}")
@@ -133,6 +153,23 @@ def render_local_info_tab(city, language):
     else:
         st.info("Bitte zuerst ein Reiseziel eingeben.")
 
+# === Sehenswürdigkeiten Tab ===
+def render_sightseeing_tab(city, language):
+    if city:
+        st.subheader(f"🎯 Top 3 Sehenswürdigkeiten in {city}")
+        sights = get_top_sights(city, lang="de" if language == "Deutsch" else "en")
+        for sight in sights:
+            sight_url = f"https://www.google.com/search?q={quote_plus(sight + ' ' + city)}"
+            st.markdown(f"[{sight}]({sight_url})")
+            if unsplash_key:
+                image_url = get_unsplash_image(f"{sight} {city}")
+                if image_url:
+                    st.image(image_url, caption=sight, use_container_width=True)
+                else:
+                    st.caption("❌ Kein Bild gefunden.")
+    else:
+        st.info("Bitte zuerst ein Reiseziel eingeben.")
+
 # === Streamlit UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
@@ -152,7 +189,7 @@ with tabs[0]:
         else:
             st.warning(desc)
 
-        tips = get_travel_tips(city, lang="de" if language == "Deutsch" else "en")
+        tips = get_travel_tips(city, travel_date, lang="de" if language == "Deutsch" else "en")
         st.info(tips)
 
 with tabs[1]:
@@ -185,14 +222,4 @@ with tabs[3]:
             st.warning("Fehler beim Laden der Karte.")
 
 with tabs[4]:
-    if city:
-        st.subheader(f"🎯 Sehenswürdigkeiten in {city}")
-        places = ["Altstadt", "Museum", "Park"]
-        for place in places:
-            st.markdown(f"[{place} in {city} auf Google ansehen](https://www.google.com/search?q={quote_plus(place + ' ' + city)})")
-            if unsplash_key:
-                image_url = get_unsplash_image(f"{place} {city}")
-                if image_url:
-                    st.image(image_url, caption=f"{place}", use_container_width=True)
-    else:
-        st.info("Bitte zuerst ein Reiseziel eingeben.")
+    render_sightseeing_tab(city, language)
