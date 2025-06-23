@@ -1,4 +1,10 @@
-# Komplett aktualisierter Code für den Reiseplaner-Bot ohne PDF-Funktion, mit dynamischer Zeitzone, Währung, Sehenswürdigkeiten (mit Bildern) und interaktiver Karte
+# Vollständiger aktualisierter Streamlit-Code mit:
+# ✅ Dynamischer Uhrzeit
+# ✅ Korrekter Währung nach Land
+# ✅ Sehenswürdigkeiten mit Bildern (Unsplash)
+# ✅ Interaktive Karte
+# ❌ Ohne PDF oder E-Mail
+
 import streamlit as st
 import openai
 import requests
@@ -10,12 +16,12 @@ import folium
 from streamlit_folium import st_folium
 from urllib.parse import quote_plus
 
-# === API Keys ===
+# === API Keys aus Streamlit Secrets ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets.get("UNSPLASH_ACCESS_KEY")
 
-# === Bildsuche Unsplash ===
+# === Unsplash Bildabruf ===
 def get_unsplash_image(query):
     try:
         url = f"https://api.unsplash.com/photos/random?query={quote_plus(query)}&client_id={unsplash_key}"
@@ -24,17 +30,30 @@ def get_unsplash_image(query):
     except:
         return None
 
-# === Dynamische Stadt-Zeitzone und Währung ===
+# === Lokale Zeit + Währung ===
 def get_local_info(city):
     try:
         geolocator = Nominatim(user_agent="reiseplaner")
         location = geolocator.geocode(city)
         if not location:
             return "Unbekannt", "Unbekannt"
+
         tf = TimezoneFinder()
         timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
         local_time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
-        currency = "EUR" if "Europe" in timezone else "USD"
+
+        country = location.raw["display_name"].split(",")[-1].strip()
+        country_currency_map = {
+            "Germany": "EUR", "Austria": "EUR", "Switzerland": "CHF",
+            "United Kingdom": "GBP", "Turkey": "TRY", "United States": "USD",
+            "France": "EUR", "Italy": "EUR", "Spain": "EUR",
+            "Netherlands": "EUR", "Belgium": "EUR", "Greece": "EUR",
+            "Portugal": "EUR", "Sweden": "SEK", "Norway": "NOK",
+            "Denmark": "DKK", "Poland": "PLN", "Czechia": "CZK",
+            "Japan": "JPY", "China": "CNY", "Russia": "RUB"
+        }
+        currency = country_currency_map.get(country, "Unbekannt")
+
         return local_time, currency
     except:
         return "Unbekannt", "Unbekannt"
@@ -75,7 +94,7 @@ def get_travel_tips(city, lang="de"):
 
 # === Streamlit UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
-st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Bildern")
+st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
 
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
@@ -108,9 +127,9 @@ with tabs[2]:
         booking_url = f"https://www.booking.com/searchresults.html?ss={quote_plus(city)}"
         st.subheader("🛏️ Booking Link")
         st.markdown(f"[Hotels in {city} auf Booking.com ansehen]({booking_url})")
-        st.subheader("🏨 Beispielhotels (Google Links)")
+        st.subheader("🏨 Beispielhotels (Google Maps Links)")
         for hotel in ["Hilton", "Marriott", "Ibis"]:
-            st.markdown(f"[{hotel} {city} bei Google Maps](https://www.google.com/maps/search/{quote_plus(hotel + ' ' + city)})")
+            st.markdown(f"- [{hotel} {city} bei Google Maps](https://www.google.com/maps/search/{quote_plus(hotel + ' ' + city)})")
 
 with tabs[3]:
     if city:
@@ -126,12 +145,12 @@ with tabs[3]:
 with tabs[4]:
     if city:
         st.subheader(f"🎯 Sehenswürdigkeiten in {city}")
-        places = ["Sehenswürdigkeit 1", "Sehenswürdigkeit 2", "Sehenswürdigkeit 3"]
+        places = ["Altstadt", "Museum", "Park"]
         for place in places:
-            st.markdown(f"🔎 [{place} auf Google ansehen](https://www.google.com/search?q={quote_plus(place + ' ' + city)})")
+            st.markdown(f"[{place} in {city} auf Google ansehen](https://www.google.com/search?q={quote_plus(place + ' ' + city)})")
             if unsplash_key:
                 image_url = get_unsplash_image(f"{place} {city}")
                 if image_url:
-                    st.image(image_url, caption=place, use_container_width=True)
+                    st.image(image_url, caption=f"{place}", use_container_width=True)
     else:
         st.info("Bitte zuerst ein Reiseziel eingeben.")
