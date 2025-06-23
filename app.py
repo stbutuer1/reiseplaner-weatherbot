@@ -107,7 +107,7 @@ def get_best_image(sight, city):
     return None
 
 # === Karte ===
-import time  # Wichtig für Sleep
+import time
 
 def show_map(city):
     geolocator = Nominatim(user_agent="reiseplaner")
@@ -117,11 +117,6 @@ def show_map(city):
         if loc:
             st.success(f"📍 Standort gefunden: {loc.latitude}, {loc.longitude}")
             m = folium.Map(location=[loc.latitude, loc.longitude], zoom_start=12)
-            folium.Marker(
-                [loc.latitude, loc.longitude],
-                tooltip=city,
-                popup=f"📍 {city}"
-            ).add_to(m)
             st_folium(m, height=400)
         else:
             st.warning("❌ Stadt konnte nicht lokalisiert werden.")
