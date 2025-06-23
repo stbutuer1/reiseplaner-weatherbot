@@ -126,7 +126,7 @@ def show_map(city):
 
 
 # === Streamlit App Tabs ===
-st.title("🌤️ Guten Morgen, der Bot ist bereit um deine Reise zu planen")
+st.title("🌤️ Guten Morgen, der Bot ist bereit, um deine Reise zu planen")
 tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten", "💾 Speichern"])
 
 with tabs[0]:
@@ -186,7 +186,7 @@ def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(200, 10, txt=strip_emojis(f"Reiseplan für {city}"), ln=True, align='C')
+    pdf.cell(200, 10, txt=strip_emojis(f"Deine Reise nach {city}"), ln=True, align='C')
     pdf.ln(10)
     pdf.cell(200, 10, txt=f"Reisedatum: {date}", ln=True)
     pdf.cell(200, 10, txt=f"Wetter: {strip_emojis(weather)}", ln=True)
