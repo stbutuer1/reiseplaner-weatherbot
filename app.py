@@ -109,7 +109,7 @@ def render_local_info_tab(city, language):
         location = geolocator.geocode(city)
         if location:
             tf = TimezoneFinder()
-            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude
+            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
             time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
             st.metric("🕓 Lokale Uhrzeit", time)
         else:
