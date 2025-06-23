@@ -1,4 +1,4 @@
-# Vollständiger aktualisierter Code mit GPT-Hotelvorschlägen im Tab "🏨 Hotels"
+# Vollständiger Code inkl. stabiler Ortsinfo-Funktion mit Fehlerbehandlung & Delay
 
 import streamlit as st
 import openai
@@ -6,7 +6,9 @@ import requests
 from datetime import datetime
 import pytz
 from geopy.geocoders import Nominatim
+from geopy.exc import GeocoderUnavailable
 from timezonefinder import TimezoneFinder
+import time
 import folium
 from streamlit_folium import st_folium
 from urllib.parse import quote_plus
@@ -60,8 +62,6 @@ def get_hotels_for_city(city, lang="de"):
             ]
         )
         text = response.choices[0].message.content
-
-        # Extrahiere Hotelliste
         lines = text.strip().split("\n")
         hotels = [line.strip().lstrip("0123456789.-• ").strip() for line in lines if line.strip()]
         return hotels
@@ -102,18 +102,31 @@ def get_travel_tips(city, lang="de"):
     except Exception as e:
         return f"❌ Error: {e}"
 
-# === Ortsinfo Tab ===
+# === Ortsinfo Tab – stabilisiert ===
 def render_local_info_tab(city, language):
     if city:
-        geolocator = Nominatim(user_agent="reiseplaner")
-        location = geolocator.geocode(city)
+        geolocator = Nominatim(user_agent="reiseplaner-app-bueturkel")
+        try:
+            time.sleep(1)
+            location = geolocator.geocode(city)
+        except GeocoderUnavailable:
+            st.warning("🌐 Standortdienst aktuell nicht erreichbar. Bitte versuche es in ein paar Sekunden erneut.")
+            return
+        except Exception as e:
+            st.warning(f"🌐 Fehler beim Abrufen der Standortdaten: {e}")
+            return
+
         if location:
-            tf = TimezoneFinder()
-            timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
-            time = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
-            st.metric("🕓 Lokale Uhrzeit", time)
+            try:
+                tf = TimezoneFinder()
+                timezone = tf.timezone_at(lng=location.longitude, lat=location.latitude)
+                time_str = datetime.now(pytz.timezone(timezone)).strftime("%H:%M:%S")
+                st.metric("🕓 Lokale Uhrzeit", time_str)
+            except Exception as e:
+                st.warning(f"⏰ Fehler bei Zeitzone/Uhrzeit: {e}")
         else:
-            st.warning("Stadt konnte nicht gefunden werden.")
+            st.warning("📍 Stadt konnte nicht lokalisiert werden.")
+
         st.subheader("💱 Lokale Währung")
         currency_info = get_local_info_gpt(city, lang="de" if language == "Deutsch" else "en")
         st.info(currency_info)
@@ -159,14 +172,17 @@ with tabs[2]:
 
 with tabs[3]:
     if city:
-        geolocator = Nominatim(user_agent="reiseplaner")
-        location = geolocator.geocode(city)
-        if location:
-            m = folium.Map(location=[location.latitude, location.longitude], zoom_start=12)
-            folium.Marker([location.latitude, location.longitude], tooltip=city).add_to(m)
-            st_folium(m, width=700, height=450)
-        else:
-            st.warning("Stadt konnte nicht gefunden werden.")
+        geolocator = Nominatim(user_agent="reiseplaner-app-bueturkel")
+        try:
+            location = geolocator.geocode(city)
+            if location:
+                m = folium.Map(location=[location.latitude, location.longitude], zoom_start=12)
+                folium.Marker([location.latitude, location.longitude], tooltip=city).add_to(m)
+                st_folium(m, width=700, height=450)
+            else:
+                st.warning("Stadt konnte nicht gefunden werden.")
+        except:
+            st.warning("Fehler beim Laden der Karte.")
 
 with tabs[4]:
     if city:
