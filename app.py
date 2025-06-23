@@ -142,7 +142,25 @@ st.markdown("""
     }
     section[data-testid="stSidebar"] {
         background-color: #e6f2ff;
-        border-right: 2px solid #aaa;
+        border-right: 2px solid #cce0ff;
+        padding-top: 20px;
+    }
+    button[kind="primary"] {
+        border-radius: 8px;
+        background-color: #4da6ff;
+        color: white;
+        transition: 0.3s ease;
+    }
+    button[kind="primary"]:hover {
+        background-color: #1a8cff;
+        transform: scale(1.02);
+    }
+    div[data-testid="stVerticalBlock"] > div {
+        transition: all 0.3s ease-in-out;
+    }
+    div[data-testid="stVerticalBlock"] > div:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: scale(1.01);
     }
     @keyframes fly {
         0% { left: -100px; top: 30px; }
@@ -157,7 +175,7 @@ st.markdown("""
     </style>
     <img id="plane" src="https://upload.wikimedia.org/wikipedia/commons/0/0f/Airplane_emoji.png" />
 """, unsafe_allow_html=True)
-st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
+st.title("🌤️ Willkommen zu deinem Reiseplaner-Bot)
 
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
