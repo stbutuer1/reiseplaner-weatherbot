@@ -9,13 +9,13 @@ import pytz
 import folium
 from streamlit_folium import st_folium
 
-# === API-Key-Konfiguration (OpenAI v1) ===
+# === API-Key-Konfiguration ===
 from openai import OpenAI
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
 unsplash_key = st.secrets["UNSPLASH_ACCESS_KEY"]
 
-# === Stil: Hintergrundfarbe (ohne Animation) ===
+# === Stil: Hintergrundfarbe (blau) ===
 st.set_page_config("Reiseplaner mit KI", "🌤️")
 st.markdown("""
     <style>
@@ -31,7 +31,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# === GPT Abfragen ===
+# === GPT-Funktion ===
 def ask_gpt(prompt):
     try:
         response = client.chat.completions.create(
@@ -42,7 +42,7 @@ def ask_gpt(prompt):
     except Exception as e:
         return f"❌ Fehler: {e}"
 
-# === Reise-Tipps ===
+# === Reisetipps ===
 def get_travel_tips(city, date):
     month = date.strftime("%B")
     prompt = f"Gib mir 3 kurze Reisetipps für einen Besuch in {city} im Monat {month}. Berücksichtige saisonale Besonderheiten."
@@ -56,7 +56,7 @@ def get_weather(city):
         return f"{r['main']['temp']}°C, {r['weather'][0]['description']}"
     return "Keine Wetterdaten gefunden."
 
-# === Lokale Zeit & Währung ===
+# === Zeit & Währung ===
 def get_timezone_and_currency(city):
     geolocator = Nominatim(user_agent="reiseplaner")
     tf = TimezoneFinder()
@@ -71,7 +71,7 @@ def get_timezone_and_currency(city):
         return "–", "–"
     return "–", "–"
 
-# === Hotels (GPT generiert) ===
+# === Hotels ===
 def get_hotel_suggestions(city):
     prompt = f"Nenne 3 beliebte Hotels in {city} für Reisende. Gib nur die Hotelnamen in einer durch Kommas getrennten Liste aus."
     try:
@@ -80,7 +80,7 @@ def get_hotel_suggestions(city):
     except:
         return []
 
-# === Sehenswürdigkeiten (GPT) ===
+# === Sehenswürdigkeiten ===
 def get_attractions(city):
     prompt = f"Nenne die 3 bekanntesten Sehenswürdigkeiten in {city}. Nur die Namen, durch Kommas getrennt."
     try:
@@ -106,7 +106,7 @@ def get_best_image(sight, city):
             return img
     return None
 
-# === Interaktive Karte ===
+# === Karte ===
 def show_map(city):
     geolocator = Nominatim(user_agent="reiseplaner")
     loc = geolocator.geocode(city)
@@ -115,7 +115,7 @@ def show_map(city):
         folium.Marker([loc.latitude, loc.longitude], tooltip=city).add_to(m)
         st_folium(m, height=400)
 
-# === Streamlit Tabs ===
+# === Streamlit App Tabs ===
 st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
 tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
