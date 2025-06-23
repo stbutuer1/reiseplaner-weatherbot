@@ -115,7 +115,6 @@ def show_map(city):
         time.sleep(1)  # Gegen Rate-Limiting von Nominatim
         loc = geolocator.geocode(city)
         if loc:
-            st.success(f"📍 Standort gefunden: {loc.latitude}, {loc.longitude}")
             m = folium.Map(location=[loc.latitude, loc.longitude], zoom_start=12)
             st_folium(m, height=400)
         else:
