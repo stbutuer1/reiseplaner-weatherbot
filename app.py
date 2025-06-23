@@ -126,7 +126,7 @@ def show_map(city):
 
 
 # === Streamlit App Tabs ===
-st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Sehenswürdigkeiten")
+st.title("🌤️ Guten Morgen, der Bot ist bereit um deine Reise zu planen")
 tabs = st.tabs(["📅 Planung", "📍 Ortsinfo", "🛏 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten", "💾 Speichern"])
 
 with tabs[0]:
