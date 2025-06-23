@@ -1,6 +1,4 @@
-# Speichere den vollständigen aktualisierten Streamlit-Code als Datei mit robuster Unsplash-Integration
 
-updated_code = """
 import streamlit as st
 import openai
 import requests
@@ -65,7 +63,7 @@ def get_hotels_for_city(city, lang="de"):
             ]
         )
         text = response.choices[0].message.content
-        lines = text.strip().split("\\n")
+        lines = text.strip().split("\n")
         hotels = [line.strip().lstrip("0123456789.-• ").strip() for line in lines if line.strip()]
         return hotels
     except Exception as e:
@@ -102,7 +100,7 @@ def get_top_sights(city, lang="de"):
                 {"role": "user", "content": prompt}
             ]
         )
-        lines = response.choices[0].message.content.strip().split("\\n")
+        lines = response.choices[0].message.content.strip().split("\n")
         sights = [line.strip().lstrip("0123456789.-• ").strip() for line in lines if line.strip()]
         return sights
     except Exception as e:
@@ -225,7 +223,3 @@ with tabs[3]:
 
 with tabs[4]:
     render_sightseeing_tab(city, language)
-"""
-
-with open("/mnt/data/reiseplaner_app_final_unsplash_fixed.py", "w") as f:
-    f.write(updated_code)
