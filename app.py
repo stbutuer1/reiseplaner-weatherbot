@@ -134,14 +134,18 @@ with tabs[1]:
         st.metric("🕒 Lokale Uhrzeit", time_str)
         st.metric("💱 Währung", currency)
 
+
 with tabs[2]:
     if city:
         booking_url = f"https://www.booking.com/searchresults.html?ss={quote_plus(city)}"
         st.markdown(f"🔗 [Hotels in {city} auf Booking.com ansehen]({booking_url})")
-        st.subheader("🏨 Vorschläge")
-        for name in get_hotel_suggestions(city):
-            st.markdown(f"- [{name} bei Google Maps](https://www.google.com/maps/search/{quote_plus(name + ' ' + city)})")
 
+        st.subheader("🏨 Vorschläge")
+        hotels = get_hotel_suggestions(city)
+        for name in hotels:
+            maps_url = f"https://www.google.com/maps/search/{quote_plus(name + ' ' + city)}"
+            st.markdown(f"• **{name}** [📍 Google Maps]({maps_url})")
+            
 with tabs[3]:
     if city:
         st.subheader("📍 Interaktive Karte")
