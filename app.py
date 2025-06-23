@@ -153,6 +153,7 @@ with tabs[2]:
         for name in hotels:
             maps_url = f"https://www.google.com/maps/search/{quote_plus(name + ' ' + city)}"
             st.markdown(f"• **{name}** [📍 Google Maps]({maps_url})")
+
             
 with tabs[3]:
     if city:
