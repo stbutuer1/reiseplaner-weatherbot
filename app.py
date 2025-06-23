@@ -54,9 +54,25 @@ st.sidebar.markdown("---")
 city = st.sidebar.text_input("🌆 Reiseziel eingeben", placeholder="z. B. Rom, Paris, Istanbul")
 
 if city:
-    st.sidebar.markdown(f"🏨 [Hotels in {city}](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"🗺️ [Karte: {city}](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
-    st.sidebar.markdown(f"🎯 [Tripadvisor: {city}](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+    # 🔗 Transport-Links
+    st.sidebar.markdown("**🚉 Anreiseoptionen**")
+    st.sidebar.markdown("[🚆 Deutsche Bahn](https://reiseauskunft.bahn.de)", unsafe_allow_html=True)
+    st.sidebar.markdown(f"[✈️ Flüge nach {city} (Skyscanner)](https://www.skyscanner.de/transport/fluge-nach/{city})", unsafe_allow_html=True)
+
+    # 🖼️ Bild aus Unsplash
+    st.sidebar.image(f"https://source.unsplash.com/400x300/?{city}", caption=f"{city}", use_column_width=True)
+
+    # 🔗 Weitere Links
+    st.sidebar.markdown("**🔗 Weitere Links**")
+    st.sidebar.markdown(f"[🏨 Hotels in {city}](https://www.booking.com/searchresults.html?ss={city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"[🗺️ {city} auf Google Maps](https://www.google.com/maps/search/{city})", unsafe_allow_html=True)
+    st.sidebar.markdown(f"[🎯 Tripadvisor: {city}](https://www.tripadvisor.de/Search?q={city})", unsafe_allow_html=True)
+
+    # 🌐 Info: Uhrzeit & Währung (symbolisch)
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**🌍 Ortsinfo (symbolisch)**")
+    st.sidebar.markdown("🕒 Lokale Uhrzeit: wird angepasst")  # Placeholder
+    st.sidebar.markdown("💱 Währung: z. B. EUR")
 
 st.sidebar.markdown("---")
 st.sidebar.info("Gib ein Reiseziel und Datum ein, um Tipps & Wetter zu erhalten.")
