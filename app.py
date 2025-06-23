@@ -8,6 +8,7 @@ from geopy.geocoders import Nominatim
 import pytz
 import folium
 from streamlit_folium import st_folium
+from dein_modulname import create_pdf
 
 # === API-Key-Konfiguration ===
 from openai import OpenAI
@@ -171,3 +172,21 @@ with tabs[4]:
                 st.image(image_url, caption=sight, use_container_width=True)
             else:
                 st.warning(f"❌ Kein Bild für {sight} gefunden.")
+                
+with tabs[5]:  # z. B. "💾 Speichern"
+    st.subheader("💾 Reiseübersicht speichern")
+
+    if city:
+        if st.button("📄 PDF erstellen"):
+            pdf_path = create_pdf(
+                city=city,
+                date=date.strftime("%d.%m.%Y"),
+                weather=get_weather(city),
+                tips=get_travel_tips(city, date),
+                time_str=get_timezone_and_currency(city)[0],
+                currency=get_timezone_and_currency(city)[1],
+                hotels=get_hotel_suggestions(city),
+                sights=get_attractions(city)
+            )
+            with open(pdf_path, "rb") as f:
+                st.download_button("📥 PDF herunterladen", f, file_name="Reiseplan.pdf")                
