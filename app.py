@@ -129,9 +129,12 @@ with tabs[2]:
         booking_url = f"https://www.booking.com/searchresults.html?ss={quote_plus(city)}"
         st.subheader("🛏️ Booking Link")
         st.markdown(f"[Hotels in {city} auf Booking.com ansehen]({booking_url})")
-        st.subheader("🏨 Beispielhotels (Google Maps Links)")
-        for hotel in ["Hilton", "Marriott", "Ibis"]:
-            st.markdown(f"- [{hotel} {city} bei Google Maps](https://www.google.com/maps/search/{quote_plus(hotel + ' ' + city)})")
+
+        st.subheader("🏨 Lokale Hotelvorschläge")
+        hotels = get_hotels_for_city(city, lang="de" if language == "Deutsch" else "en")
+        for hotel in hotels:
+            url = f"https://www.google.com/maps/search/{quote_plus(hotel + ' ' + city)}"
+            st.markdown(f"- [{hotel}]({url})")
 
 with tabs[3]:
     if city:
