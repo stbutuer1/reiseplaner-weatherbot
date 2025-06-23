@@ -1,4 +1,4 @@
-# Neu ausführen nach Reset: PDF-Funktion entfernt und neue Features eingebaut
+# Komplett aktualisierter Code für den Reiseplaner-Bot ohne PDF-Funktion, mit dynamischer Zeitzone, Währung, Sehenswürdigkeiten (mit Bildern) und interaktiver Karte
 import streamlit as st
 import openai
 import requests
@@ -13,6 +13,16 @@ from urllib.parse import quote_plus
 # === API Keys ===
 client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 weather_api_key = st.secrets["WEATHER_API_KEY"]
+unsplash_key = st.secrets.get("UNSPLASH_ACCESS_KEY")
+
+# === Bildsuche Unsplash ===
+def get_unsplash_image(query):
+    try:
+        url = f"https://api.unsplash.com/photos/random?query={quote_plus(query)}&client_id={unsplash_key}"
+        response = requests.get(url).json()
+        return response["urls"]["regular"]
+    except:
+        return None
 
 # === Dynamische Stadt-Zeitzone und Währung ===
 def get_local_info(city):
@@ -65,7 +75,7 @@ def get_travel_tips(city, lang="de"):
 
 # === Streamlit UI ===
 st.set_page_config(page_title="Reiseplaner", page_icon="🌍")
-st.title("🌤️ Reiseplaner-Bot mit KI, Wetter & Links")
+st.title("🌤️ Reiseplaner-Bot mit KI, Wetter, Karte & Bildern")
 
 tabs = st.tabs(["🎒 Planung", "🕓 Ortsinfo", "🏨 Hotels", "🗺️ Karte", "🎯 Sehenswürdigkeiten"])
 
@@ -116,8 +126,12 @@ with tabs[3]:
 with tabs[4]:
     if city:
         st.subheader(f"🎯 Sehenswürdigkeiten in {city}")
-        places = ["Eiffelturm", "Louvre Museum", "Kathedrale Notre-Dame de Paris", "Triumphbogen", "Montmartre-Basilika"]
+        places = ["Sehenswürdigkeit 1", "Sehenswürdigkeit 2", "Sehenswürdigkeit 3"]
         for place in places:
             st.markdown(f"🔎 [{place} auf Google ansehen](https://www.google.com/search?q={quote_plus(place + ' ' + city)})")
+            if unsplash_key:
+                image_url = get_unsplash_image(f"{place} {city}")
+                if image_url:
+                    st.image(image_url, caption=place, use_column_width=True)
     else:
         st.info("Bitte zuerst ein Reiseziel eingeben.")
