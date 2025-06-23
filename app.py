@@ -174,31 +174,36 @@ with tabs[4]:
             else:
                 st.warning(f"❌ Kein Bild für {sight} gefunden.")
 
+import re
+
+def strip_emojis(text):
+    return re.sub(r'[^\x00-\x7F]+', '', text)  # Entfernt Nicht-ASCII-Zeichen
+
 def create_pdf(city, date, weather, time_str, currency, hotels, sights, tips):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
-    pdf.cell(200, 10, txt=f"Reiseplan für {city}", ln=True, align='C')
+    pdf.cell(200, 10, txt=strip_emojis(f"Reiseplan für {city}"), ln=True, align='C')
     pdf.ln(10)
-    pdf.cell(200, 10, txt=f"📅 Reisedatum: {date}", ln=True)
-    pdf.cell(200, 10, txt=f"🌤️ Wetter: {weather}", ln=True)
-    pdf.cell(200, 10, txt=f"🕒 Lokale Uhrzeit: {time_str}", ln=True)
-    pdf.cell(200, 10, txt=f"💱 Währung: {currency}", ln=True)
+    pdf.cell(200, 10, txt=f"Reisedatum: {date}", ln=True)
+    pdf.cell(200, 10, txt=f"Wetter: {strip_emojis(weather)}", ln=True)
+    pdf.cell(200, 10, txt=f"Lokale Uhrzeit: {time_str}", ln=True)
+    pdf.cell(200, 10, txt=f"Währung: {currency}", ln=True)
     pdf.ln(10)
 
-    pdf.cell(200, 10, txt="🏨 Hotels:", ln=True)
+    pdf.cell(200, 10, txt="Hotels:", ln=True)
     for hotel in hotels:
-        pdf.cell(200, 10, txt=f"- {hotel}", ln=True)
+        pdf.cell(200, 10, txt=f"- {strip_emojis(hotel)}", ln=True)
     pdf.ln(5)
 
-    pdf.cell(200, 10, txt="🎯 Sehenswürdigkeiten:", ln=True)
+    pdf.cell(200, 10, txt="Sehenswürdigkeiten:", ln=True)
     for sight in sights:
-        pdf.cell(200, 10, txt=f"- {sight}", ln=True)
+        pdf.cell(200, 10, txt=f"- {strip_emojis(sight)}", ln=True)
     pdf.ln(5)
 
-    pdf.cell(200, 10, txt="💡 Reisetipps:", ln=True)
-    pdf.multi_cell(0, 10, tips)
+    pdf.cell(200, 10, txt="Reisetipps:", ln=True)
+    pdf.multi_cell(0, 10, strip_emojis(tips))
 
     output_path = "/mnt/data/reiseplan.pdf"
     pdf.output(output_path)
